@@ -38,9 +38,15 @@ var server = http.createServer(function (request, response) {
 });
  
 	// Listen to port 5000, log to console
-server.listen(5000, function() {
+/*server.listen(5000, function() {
   console.log('Listening to port ' + server.address().port);
-  });
+  });*/
+  
+  var port = process.env.PORT || 3000;
+
+app.listen(port, function() {
+  console.log("Listening on " + port);
+});
  
 	//Mime type definitions
 var mimes = {
