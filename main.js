@@ -42,10 +42,10 @@ var server = http.createServer(function (request, response) {
   console.log('Listening to port ' + server.address().port);
   });*/
   
-  var port = process.env.PORT || 3000;
+ var port = process.env.PORT || 3000;
 
-app.listen(port, function() {
-  console.log("Listening on " + port);
+server.listen(port, function() {
+  console.log("Listening on " + server.address().port);
 });
  
 	//Mime type definitions
