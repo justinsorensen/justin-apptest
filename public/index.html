@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Tetris</title>
+  <style>
+    html, body, canvas {
+      margin: 0;
+      padding: 0
+    }
+    html, body { 
+      width:100%; 
+      height:100%; 
+      overflow:hidden;
+    }
+  </style>
+</head>
+
+<body>
+	<center>
+		<table>
+		  <tr>
+			<td>
+				<canvas id="canvas" width="250" height="450"></canvas>
+			</td>
+		  </tr>
+		  <tr>
+			<td>
+				<div>Lines Completed: </div><div id="linescompleted"> </div>
+			</td>
+		  </tr>
+		</table
+	</center>  
+  <script type="text/javascript" src ="kibo.js"></script>
+  <script type="text/javascript"> 
+    var CELL_SIZE = 25;
+    var INTERVAL = 600; // milliseconds
+    var canvas = document.getElementById('canvas');
+	canvas.style.border = "black 1px solid";
+    var ctx = canvas.getContext('2d');
+	var gameActive = true;
+    var inactiveBlocks = [];
+	var completeLines = 0;
+	var inactiveBlocks = [];
+	var blockRotate = []
+
+	//check colors/orientation later on Tetris wiki
+	
+	//l Block light blue
+	blockRotate[0] = [
+		[[0,-1],[0,0],[0,1],[0,2]],
+		[[-1,0],[0,0],[1,0],[2,0]],
+		[[0,-2],[0,-1],[0,0],[0,1]],
+		[[-2,0],[-1,0],[0,0],[1,0]] 
+	];
+
+	// j block dark blue
+	blockRotate[1] = [
+	  [[-1,1],[0,1],[0,0],[0,-1]],
+	  [[-1,-1],[-1,0],[0,0],[1,0]],
+	  [[0,1],[0,0],[0,-1],[1,-1]],
+	  [[-1,0],[0,0],[1,0],[1,1]]
+	];
+	
+	// l block orange
+	blockRotate[2] = [
+	  [[0,-1],[0,0],[0,1],[1,1]],
+	  [[-1,1],[-1,0],[0,0],[1,0]],
+	  [[-1,-1],[0,-1],[0,0],[0,1]],
+	  [[-1,0],[0,0],[1,0],[1,-1]]
+	];
+	
+	// o block yellow
+	blockRotate[3] = [
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]]
+	];
+	
+	// s block green
+	blockRotate[4] = [
+	  [[-1,1],[0,1],[0,0],[1,0]],
+	  [[0,-1],[0,0],[1,0],[1,1]],
+	  [[-1,1],[0,1],[0,0],[1,0]],
+	  [[0,-1],[0,0],[1,0],[1,1]]
+	];
+	
+	// t block purple
+	blockRotate[5] = [
+	  [[0,-1],[0,0],[-1,0],[1,0]],
+	  [[0,-1],[0,0],[0, 1],[1,0]],
+	  [[0,1],[0,0],[-1,0],[1,0]],
+	  [[0,-1],[0,0],[-1,0],[0,1]]
+	];
+
+	// z block red
+	blockRotate[6] = [
+	  [[-1,0],[0,0],[0,1],[1,1]],
+	  [[0,0],[0,1],[1,0],[1,-1]],
+	  [[-1,0],[0,0],[0,1],[1,1]],
+	  [[0,0],[0,1],[1,0],[1,-1]]
+	];
+
+	
+	var activeBlock = new Block(Math.floor(Math.random()*7));
+	
+	
+    function clearGrid() {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
+    }
+	
+	//***********Cell definition begin *******************
+    function Cell(x, y) {
+      this.x = x;
+      this.y = y;
+	  this.draw = function() {
+		ctx.fillStyle = '#000000';
+		ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
+	  }
+	  
+	  this.drop = function() {
+		++this.y;
+		console.log('dropped cell');
+	  }
+	  
+	  this.shiftLeft = function() {
+		--this.x;
+	  }
+	  
+	  this.shiftRight = function() {
+		++this.x;
+	  }
+	  
+    }
+	//************* Cell definition end ***********************
+
+	
+	//************* Block definition begin*********************
+	
+    function Block(blockType) {
+      this.type = blockType;
+      this.cells = [];
+      this.x = 5;
+      this.y = -1;
+	  this.rotating = 0;
+	  
+		  for(var i = 0; i < 4; i++) {		//index position definitions [block type][which rotation][which block][x or y]
+			this.cells.push(new Cell(this.x + blockRotate[this.type][this.rotating][i][0], this.y + blockRotate[this.type][this.rotating][i][1]));
+		  }
+	  
+	  this.draw = function() {
+        for (var i = 0; i < this.cells.length; i++) {
+			this.cells[i].draw();
+		}
+	  }
+	  
+	  
+	  this.drop = function() {
+		++this.y;
+		console.log('dropped block');
+		for(var i = 0; i < this.cells.length; i++) {
+			this.cells[i].drop();
+		}
+	  }
+	  
+	  
+	  //****************moveFunctions need collision check******************
+	  this.canMoveLeft = function() {
+	    for(var i = 0; i < inactiveBlocks.length; i++) {
+		  if(activeBlock.wouldCollideLeft(inactiveBlocks[i])) { 
+			return false;
+			console.log('canMoveLeft == false');
+		  }
+		} 
+		return true;
+		
+	  }
+	  
+	  
+	  this.moveLeft = function() {
+		for(var i = 0; i < this.cells.length; i++) {
+			if(this.cells[i].x <=0) {
+				return false;
+				console.log('moveLeft == false');
+			}
+		}	
+			if(activeBlock.canMoveLeft()) {	
+				for(var i = 0; i < this.cells.length; i++) {
+					this.cells[i].shiftLeft();
+					this.x--;
+				}
+			}
+		console.log('moveLeft');
+	  }
+	  
+	  this.canMoveRight = function() {
+	    for(var i = 0; i < inactiveBlocks.length; i++) {
+		  if(activeBlock.wouldCollideRight(inactiveBlocks[i])) {
+			return false;
+			console.log('canMoveRight == false');
+		  }
+	    }
+		return true;
+	  }
+	  
+	  this.moveRight = function() {
+		for(var i = 0; i < this.cells.length; i++) {
+			if(this.cells[i].x >=9) {
+				return false;
+				console.log('moveRight == false');
+			}
+		}
+			if(activeBlock.canMoveRight()) {	
+				for(var i = 0; i < this.cells.length; i++) {
+					this.cells[i].shiftRight();
+					this.x++;
+				}
+			}
+		console.log('moveRight');
+	  }
+	  
+	  this.rotate = function() {
+		var newBlocks = [];
+		var oldBlocks = activeBlock.cells;
+		this.rotating++
+		
+		if(this.rotating == 4) {
+			this.rotating = 0;
+		}
+		for(var i = 0; i < 4; i++) {			//index position definitions [block type][which rotation][which block][x or y]
+			newBlocks.push(new Cell(this.x + blockRotate[this.type][this.rotating][i][0], this.y + blockRotate[this.type][this.rotating][i][1]));
+		}
+		for(var i = 0; i < 4; i++) {
+			if(newBlocks[i].x > 9) {
+				while(newBlocks[i].x > 9) {
+					for(var j = 0; j < 4; j++) {
+						newBlocks[j].shiftLeft();
+					}
+				}
+			}
+			if(newBlocks[i].x < 0) {
+				while(newBlocks[i].x < 0) {
+					for(var k = 0; k < 4; k++) {
+						newBlocks[k].shiftRight();
+					}
+				}
+			}
+			if(newBlocks[i].y > 17) {
+				while(newBlocks[i].y > 17) {
+					for(var m = 0; m < 4; m++) {
+						newBlocks[m].y--;
+					}
+				}
+			}
+		}
+		activeBlock.cells = newBlocks;
+		console.log('.rotate');
+	  }
+	  
+	  this.moveDown = function() {
+		if(activeBlock.canDrop()) {
+			activeBlock.drop();
+		}
+		console.log("moveDown");
+	  }
+    
+	}
+	//***************Block definition end ************************
+	
+	//***************Collision Checks **************************
+    Block.prototype.wouldCollideDown = function(otherBlock) {		//Down collision check
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.x == cell.x && otherCell.y == cell.y + 1) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+	
+	Block.prototype.wouldCollideRight = function(otherBlock) {		//Right collision check
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.x == cell.x + 1 && otherCell.y == cell.y) {
+            return true;
+			console.log('wouldCollideRight == true');
+          }
+        }
+      }
+      return false;
+    };
+	
+	Block.prototype.wouldCollideLeft = function(otherBlock) {		//Left collision check
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.x == cell.x - 1 && otherCell.y == cell.y) {
+            console.log('wouldCollideLeft == true');
+			return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    Block.prototype.canDrop = function() {
+	  for(var i = 0; i < 4; i++) {	
+		if (this.y >= 17) {
+			return false;
+		  }
+	  }
+      for (var i = 0; i < inactiveBlocks.length; ++i) {
+        if (activeBlock.wouldCollideDown(inactiveBlocks[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+	
+	//***************End Collision Checks **************************
+	
+	Block.prototype.forceDrop = function() {
+		clearActiveBlock(activeBlock);
+		while(this.canDrop()) {					//Need to have function for increase drop speed
+			this.drop();
+		}
+		inactiveBlocks.push(activeBlock);
+		inactiveBlocks[inactiveBlocks.length-1].draw();
+		
+		activeBlock = new Block(Math.floor(Math.random()*7));
+	}
+
+	function gameCheck() {
+		if(activeBlock.canDrop()) {
+			activeBlock.drop();
+		}
+		else {
+			inactiveBlocks.push(activeBlock);
+			activeBlock = new Block(Math.floor(Math.random()*7));
+			if(activeBlock.canDrop() == false) {					//CHECK SYNTAX, need == or === ?
+				gameActive = false;
+			}
+		}
+		console.log('gameCheck');
+	}
+	
+	
+	function clearActiveBlock(block) {						//clears activeBlock for the purpose of movement without ghosting.
+		for(var i = 0; i < block.cells.length; i++) {
+			ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
+		}
+	}
+	
+	function updateBlocks() {
+		clearGrid();
+		for(var i = 0; i < inactiveBlocks.length; i++) {
+			inactiveBlocks[i].draw();
+		}
+		activeBlock.draw();
+	  console.log('updateBlocks');
+	}
+	
+	function completedLines() {		//need to update rows, delete completed, then shift remainder of blocks downward somehow.
+		var lineBlocks = 0;
+		for(var i = 17; i >= 0; i--) {
+			for(var j = 0; j < inactiveBlocks.length; j++) {
+				for(var k = 0; k < inactiveBlocks[j].cells.length; k++) {
+					if(inactiveBlocks[j].cells[k].y == i) {
+						lineBlocks++;
+					}
+				}
+			}
+			if(lineBlocks == 10) {
+				for(var m = 0; m < inactiveBlocks.length; m++) {
+					for(var n = inactiveBlocks[m].cells.length-1; n >= 0; n--) {
+						if(inactiveBlocks[m].cells[n].y == i) {
+							inactiveBlocks[m].cells.splice(n,1);
+						}
+					}
+				}
+				for(var p =0; p < inactiveBlocks.length; p++) {
+					for(var q = inactiveBlocks[p].cells.length-1; q >= 0; q--) {
+						if(inactiveBlocks[p].cells[q].y < i) {
+							inactiveBlocks[p].cells[q].y++;
+						}
+					}
+				}
+				
+				completeLines++;
+				console.log(completeLines);
+				i++;
+			}
+			
+			lineBlocks = 0;
+		}
+		
+		for(var r = inactiveBlocks.length-1; r > 0; r--) {
+			if(inactiveBlocks[r].cells.length == 0) {
+				inactiveBlocks.splice(r,1);
+			}
+		}
+		console.log('completedLines');
+	}
+
+	//************Key input using kibo.js recommened on ibm.com https://github.com/marquete/kibo/blob/master/kibo.js
+	
+	var k = new Kibo();
+	
+	k.down(['left'], function () {
+	    clearActiveBlock(activeBlock);
+		activeBlock.moveLeft();
+	    activeBlock.draw();
+	});
+	k.down(['right'], function () {
+	    clearActiveBlock(activeBlock);
+		activeBlock.moveRight();
+	    activeBlock.draw();
+	});
+	
+	k.down(['up'], function () {
+	    clearActiveBlock(activeBlock);
+		activeBlock.rotate();
+	    activeBlock.draw();
+	});
+	
+	k.down(['down'], function () {
+	    clearActiveBlock(activeBlock);
+		activeBlock.moveDown();
+	    activeBlock.draw();
+	});
+	
+	k.down(['space'], function () {
+	    clearActiveBlock(activeBlock);
+		activeBlock.forceDrop();
+	    activeBlock.draw();
+	});
+		
+    activeBlock.draw();	
+	function gameLoop() {
+	  gameCheck();
+	  completedLines();
+	  updateBlocks();
+	  document.getElementById("linescompleted").innerText=completeLines;
+	  if(gameActive) {
+		setTimeout("gameLoop()", INTERVAL); //CHECK setInterval vs. setTimeout
+	  }
+	}
+	gameLoop();
+	
+	/*activeBlock.draw();
+    var interval = setInterval(function() {
+      clearGrid();
+      for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
+      if (activeBlock.canDrop()) {
+        activeBlock.drop();
+      } else {
+        inactiveBlocks.push(activeBlock);
+        activeBlock = new Block(0);						//OLD LOOP NEED TO DELETE ONCE FINISHED
+        if (activeBlock.canDrop() === false) {
+          clearInterval(interval);
+        }
+      }
+      activeBlock.draw();
+    }, INTERVAL);*/
+	
+  </script>
+
+</body>
+</html>
