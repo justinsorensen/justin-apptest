@@ -16,6 +16,17 @@
       overflow:hidden;
     }
   </style>
+  
+  <script>
+	function myController($scope, $http) {
+		$scope.add = function() {
+			var data = {score:$scope.description}
+			var url = https://api.mongolab.com/api/1/databases/tetris/collections/scores?apiKey=TeBAn-RHiYrUjizTkoe0SZ4FqOtxrxUQ
+			
+			$http.post(url, data);
+		}
+	}
+</script>
 </head>
 
 <body>
@@ -29,6 +40,14 @@
 		  <tr>
 			<td>
 				<div>Lines Completed: </div><div id="linescompleted"> </div>
+			</td>
+		  </tr>
+		  <tr>
+			<td>
+				<div ng-contoller="myController">
+					<input type="text" ng-model="description" ng-model-instant /> <br>
+					<button ng-click="add()">Submit Score</button>
+				</div>
 			</td>
 		  </tr>
 		</table
